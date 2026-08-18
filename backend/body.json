@@ -1,0 +1,9 @@
+﻿{
+  "userId": "test",
+  "subject": "concurrency test",
+  "body": "t",
+  "senderId": "PASTE_SENDER_ID",
+  "startTime": "2026-08-18T15:20:00Z",
+  "delayMs": 100,
+  "recipients": ["a@test.com","b@test.com","c@test.com","d@test.com","e@test.com","f@test.com"]
+}

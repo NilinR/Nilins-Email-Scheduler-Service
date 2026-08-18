@@ -3,7 +3,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { connection } from './connection.js';
 import { EMAIL_QUEUE_NAME, emailQueue, emailJobId } from './emailQueue.js';
 import { db } from '../db/client.js';
-import { emails } from '../db/schema.js';
+import { emails, campaigns } from '../db/schema.js';
 import { checkAndIncrementRateLimit } from '../services/rateLimiter.js';
 import { sendEmail } from '../services/mailer.js';
 import { config } from '../config.js';
@@ -11,10 +11,15 @@ import { config } from '../config.js';
 async function processor(job: Job): Promise<void> {
   const { emailId } = job.data as { emailId: string };
 
-  const [row] = await db.select().from(emails).where(eq(emails.id, emailId));
+  const [row] = await db
+    .select({ email: emails, hourlyLimit: campaigns.hourlyLimit })
+    .from(emails)
+    .innerJoin(campaigns, eq(emails.campaignId, campaigns.id))
+    .where(eq(emails.id, emailId))
+    .then((rows) => rows.map((r) => ({ ...r.email, hourlyLimit: r.hourlyLimit })));
   if (!row || row.status === 'sent') return; // already handled - idempotent exit
 
-  const rateLimit = await checkAndIncrementRateLimit(row.senderId);
+  const rateLimit = await checkAndIncrementRateLimit(row.senderId, row.hourlyLimit);
   if (!rateLimit.allowed) {
     // no fail, reschedule into the next window, same jobId
     await emailQueue.add(

@@ -1,10 +1,16 @@
 import { v4 as uuid } from 'uuid';
 import { db } from '../db/client.js';
-import { campaigns, emails } from '../db/schema.js';
+import { campaigns, emails, campaignAttachments } from '../db/schema.js';
 import { emailQueue, emailJobId } from '../queue/emailQueue.js';
 import { config } from '../config.js';
 
 //runs when campaigns is called from api
+
+export interface CampaignAttachmentInput {
+  filename: string;
+  mimeType: string;
+  data: string; // base64-encoded file content
+}
 
 interface CreateCampaignInput {
   userId: string;
@@ -15,6 +21,7 @@ interface CreateCampaignInput {
   delayMs: number;
   hourlyLimit?: number;
   recipients: string[]; // validated email addresses
+  attachments?: CampaignAttachmentInput[];
 }
 
 export async function createCampaign(input: CreateCampaignInput) {
@@ -31,6 +38,19 @@ export async function createCampaign(input: CreateCampaignInput) {
     hourlyLimit: input.hourlyLimit ?? null,
     totalRecipients: input.recipients.length,
   });
+
+  if (input.attachments && input.attachments.length > 0) {
+    await db.insert(campaignAttachments).values(
+      input.attachments.map((a) => ({
+        id: uuid(),
+        campaignId,
+        filename: a.filename,
+        mimeType: a.mimeType,
+        size: Buffer.byteLength(a.data, 'base64'),
+        data: a.data,
+      }))
+    );
+  }
 
   // clamp to the server-enforced minimum so scheduledAt reflects what the
   // queue-level limiter will actually honor - otherwise a delayMs smaller than

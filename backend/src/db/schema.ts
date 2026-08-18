@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, int, timestamp, mysqlEnum, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, longtext, int, boolean, timestamp, mysqlEnum, index } from 'drizzle-orm/mysql-core';
 
 //one row for each smtp identity (ethereal test account)
 export const senders = mysqlTable('senders', {
@@ -26,6 +26,20 @@ export const campaigns = mysqlTable('campaigns', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+//one row per file attached to a campaign - shared across all recipients of that campaign
+export const campaignAttachments = mysqlTable('campaign_attachments', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  campaignId: varchar('campaign_id', { length: 36 }).notNull()
+    .references(() => campaigns.id, { onDelete: 'cascade' }),
+  filename: varchar('filename', { length: 255 }).notNull(),
+  mimeType: varchar('mime_type', { length: 255 }).notNull(),
+  size: int('size').notNull(), //bytes, of the decoded file - for display only
+  data: longtext('data').notNull(), //base64-encoded file content
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  campaignIdx: index('idx_campaign_attachments_campaign').on(table.campaignId),
+}));
+
 //for each email to be sent, holds its status and scheduling info
 export const emails = mysqlTable('emails', {
   id: varchar('id', { length: 36 }).primaryKey(), //uuid which is used to build BullMQ jobId
@@ -37,9 +51,12 @@ export const emails = mysqlTable('emails', {
   status: mysqlEnum('status', ['pending', 'processing', 'sent', 'failed']).default('pending').notNull(), //defualt is pending
   scheduledAt: timestamp('scheduled_at').notNull(),
   sentAt: timestamp('sent_at'), //set at sucess
+  nextAttemptAt: timestamp('next_attempt_at'), //set when rate-limited and moved to delayed; null once sent/failed/never limited
   attempts: int('attempts').default(0).notNull(), //default is 0, incremented by BullMQ metrics
   errorMessage: text('error_message'), //last failure reason
   jobId: varchar('job_id', { length: 255 }).notNull(), //BullMQ jobId, denormalized for fast lookup
+  starred: boolean('starred').default(false).notNull(),
+  archived: boolean('archived').default(false).notNull(), //archived rows are hidden from the scheduled/sent lists
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
 }, (table) => ({

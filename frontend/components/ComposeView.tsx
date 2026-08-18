@@ -8,7 +8,16 @@ import { RichTextToolbar } from '@/components/compose/RichTextToolbar';
 import { SendLaterPopover, type ScheduledTime } from '@/components/compose/SendLaterPopover';
 import { AttachmentsStrip, type ComposeAttachment } from '@/components/compose/AttachmentsStrip';
 import { apiClient } from '@/lib/apiClient';
-import type { CreateCampaignPayload, CreateCampaignResponse, Sender } from '@/lib/types';
+import type { CampaignAttachmentPayload, CreateCampaignPayload, CreateCampaignResponse, Sender } from '@/lib/types';
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 export function ComposeView({ onBack }: { onBack: (notice?: string) => void }) {
   const { data: session } = useSession();
@@ -76,20 +85,29 @@ export function ComposeView({ onBack }: { onBack: (notice?: string) => void }) {
       return;
     }
 
-    const payload: CreateCampaignPayload = {
-      userId: session.user.id,
-      subject,
-      body: bodyHtml,
-      senderId,
-      startTime: scheduled?.isoDate ?? new Date().toISOString(),
-      delayMs: Number(delayBetweenEmails) || 0,
-      hourlyLimit: hourlyLimit ? Number(hourlyLimit) : undefined,
-      recipients,
-    };
-
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const encodedAttachments: CampaignAttachmentPayload[] = await Promise.all(
+        attachments.map(async (a) => ({
+          filename: a.file.name,
+          mimeType: a.file.type || 'application/octet-stream',
+          data: await fileToBase64(a.file),
+        }))
+      );
+
+      const payload: CreateCampaignPayload = {
+        userId: session.user.id,
+        subject,
+        body: bodyHtml,
+        senderId,
+        startTime: scheduled?.isoDate ?? new Date().toISOString(),
+        delayMs: Number(delayBetweenEmails) || 0,
+        hourlyLimit: hourlyLimit ? Number(hourlyLimit) : undefined,
+        recipients,
+        attachments: encodedAttachments.length > 0 ? encodedAttachments : undefined,
+      };
+
       const result = await apiClient.post<CreateCampaignResponse>('/api/campaigns', payload, {
         headers: { 'Idempotency-Key': idempotencyKey },
       });

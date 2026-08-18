@@ -3,6 +3,8 @@ import { Clock, Star } from 'lucide-react';
 export interface EmailAttachment {
   name: string;
   size: string;
+  url: string;
+  mimeType: string;
 }
 
 export interface EmailListItemData {
@@ -14,12 +16,22 @@ export interface EmailListItemData {
   date: string;
   subject: string;
   preview: string;
-  body: string[];
+  retryLabel?: string | null;
+  bodyHtml: string;
   status: 'scheduled' | 'sent';
   attachments?: EmailAttachment[];
+  starred: boolean;
 }
 
-export function EmailListItem({ item, onClick }: { item: EmailListItemData; onClick?: () => void }) {
+export function EmailListItem({
+  item,
+  onClick,
+  onToggleStar,
+}: {
+  item: EmailListItemData;
+  onClick?: () => void;
+  onToggleStar?: () => void;
+}) {
   return (
     <button
       type="button"
@@ -37,12 +49,38 @@ export function EmailListItem({ item, onClick }: { item: EmailListItemData; onCl
         <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Sent</span>
       )}
 
+      {item.retryLabel && (
+        <span className="flex shrink-0 items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+          <Clock size={12} />
+          {item.retryLabel}
+        </span>
+      )}
+
       <span className="min-w-0 flex-1 truncate text-gray-700">
         <span className="font-medium text-gray-900">{item.subject}</span>
         <span className="text-gray-400"> - {item.preview}</span>
       </span>
 
-      <Star size={16} className="shrink-0 text-gray-300" />
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label={item.starred ? 'Unstar' : 'Star'}
+        aria-pressed={item.starred}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleStar?.();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleStar?.();
+          }
+        }}
+        className="shrink-0 rounded p-0.5 text-gray-300 transition hover:text-yellow-500"
+      >
+        <Star size={16} className={item.starred ? 'fill-yellow-400 text-yellow-500' : ''} />
+      </span>
     </button>
   );
 }

@@ -16,7 +16,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // POST /api/campaigns - accept email scheduling requests
 router.post('/', async (req, res) => {
-  const { userId, subject, body, senderId, startTime, delayMs, hourlyLimit, recipients } = req.body ?? {};
+  const { userId, subject, body, senderId, startTime, delayMs, hourlyLimit, recipients, attachments } = req.body ?? {};
 
   if (typeof userId !== 'string' || !userId) {
     return res.status(400).json({ error: 'userId is required' });
@@ -48,6 +48,20 @@ router.post('/', async (req, res) => {
   if (validRecipients.length === 0) {
     return res.status(400).json({ error: 'No valid recipient emails in request.' });
   }
+  if (attachments !== undefined) {
+    if (!Array.isArray(attachments)) {
+      return res.status(400).json({ error: 'attachments must be an array' });
+    }
+    const valid = attachments.every(
+      (a) =>
+        a && typeof a.filename === 'string' && a.filename &&
+        typeof a.mimeType === 'string' && a.mimeType &&
+        typeof a.data === 'string' && a.data
+    );
+    if (!valid) {
+      return res.status(400).json({ error: 'each attachment needs filename, mimeType, and data (base64)' });
+    }
+  }
 
   const result = await createCampaign({
     userId,
@@ -58,6 +72,7 @@ router.post('/', async (req, res) => {
     delayMs,
     hourlyLimit,
     recipients: validRecipients,
+    attachments,
   });
 
   res.status(201).json({ ...result, skippedRecipients });

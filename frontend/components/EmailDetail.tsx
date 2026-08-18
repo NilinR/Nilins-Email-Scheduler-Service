@@ -4,7 +4,19 @@ import Image from 'next/image';
 import { ArrowLeft, Star, Archive, Trash2, ChevronDown, Paperclip } from 'lucide-react';
 import type { EmailListItemData } from '@/components/EmailListItem';
 
-export function EmailDetail({ item, onBack }: { item: EmailListItemData; onBack: () => void }) {
+export function EmailDetail({
+  item,
+  onBack,
+  onToggleStar,
+  onArchive,
+  onDelete,
+}: {
+  item: EmailListItemData;
+  onBack: () => void;
+  onToggleStar: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
   const { data: session } = useSession();
 
   return (
@@ -23,9 +35,15 @@ export function EmailDetail({ item, onBack }: { item: EmailListItemData; onBack:
           <span className="text-gray-400">{item.threadId}</span>
         </h2>
         <div className="flex shrink-0 items-center gap-3 text-gray-400">
-          <Star size={16} className="cursor-pointer hover:text-gray-600" />
-          <Archive size={16} className="cursor-pointer hover:text-gray-600" />
-          <Trash2 size={16} className="cursor-pointer hover:text-gray-600" />
+          <button type="button" onClick={onToggleStar} aria-label={item.starred ? 'Unstar' : 'Star'} aria-pressed={item.starred}>
+            <Star size={16} className={`cursor-pointer transition ${item.starred ? 'fill-yellow-400 text-yellow-500' : 'hover:text-gray-600'}`} />
+          </button>
+          <button type="button" onClick={onArchive} aria-label="Archive">
+            <Archive size={16} className="cursor-pointer transition hover:text-gray-600" />
+          </button>
+          <button type="button" onClick={onDelete} aria-label="Delete">
+            <Trash2 size={16} className="cursor-pointer transition hover:text-red-600" />
+          </button>
           <span className="mx-1 h-4 w-px bg-gray-200" />
           {session?.user?.image && (
             <Image src={session.user.image} alt="" width={24} height={24} className="rounded-full" />
@@ -55,22 +73,32 @@ export function EmailDetail({ item, onBack }: { item: EmailListItemData; onBack:
           <span className="shrink-0 text-xs text-gray-400">{item.date}</span>
         </div>
 
-        <div className="space-y-3 text-sm text-gray-700">
-          {item.body.map((paragraph, i) => (
-            <p key={i}>{paragraph}</p>
-          ))}
-        </div>
+        <div
+          className="prose prose-sm max-w-none text-sm text-gray-700"
+          dangerouslySetInnerHTML={{ __html: item.bodyHtml }}
+        />
 
         {item.attachments && item.attachments.length > 0 && (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {item.attachments.map((attachment) => (
-              <div key={attachment.name} className="rounded-lg border border-gray-100 p-3">
-                <div className="mb-2 flex h-16 items-center justify-center rounded-md bg-gray-50">
-                  <Paperclip size={20} className="text-gray-300" />
+              <a
+                key={attachment.name}
+                href={attachment.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border border-gray-100 p-3 transition hover:border-gray-200 hover:bg-gray-50"
+              >
+                <div className="mb-2 flex h-16 items-center justify-center overflow-hidden rounded-md bg-gray-50">
+                  {attachment.mimeType.startsWith('image/') ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={attachment.url} alt={attachment.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <Paperclip size={20} className="text-gray-300" />
+                  )}
                 </div>
                 <p className="truncate text-xs text-gray-700">{attachment.name}</p>
                 <p className="text-xs text-gray-400">{attachment.size}</p>
-              </div>
+              </a>
             ))}
           </div>
         )}

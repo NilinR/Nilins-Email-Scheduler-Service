@@ -1,7 +1,7 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { senders, campaigns } from '../db/schema.js';
+import { senders, campaigns, campaignAttachments } from '../db/schema.js';
 import type { emails } from '../db/schema.js';
 
 type EmailRow = typeof emails.$inferSelect;
@@ -33,11 +33,22 @@ export async function sendEmail(row: EmailRow): Promise<void> {
   const [campaign] = await db.select({ body: campaigns.body }).from(campaigns).where(eq(campaigns.id, row.campaignId));
   if (!campaign) throw new Error(`Unknown campaign: ${row.campaignId}`);
 
+  const attachmentRows = await db
+    .select({ filename: campaignAttachments.filename, mimeType: campaignAttachments.mimeType, data: campaignAttachments.data })
+    .from(campaignAttachments)
+    .where(eq(campaignAttachments.campaignId, row.campaignId));
+
   const info = await transporter.sendMail({
     from: fromEmail,
     to: row.recipientEmail,
     subject: row.subject,
-    text: campaign.body,
+    html: campaign.body, // composed via the rich text editor, stored as HTML
+    attachments: attachmentRows.map((a) => ({
+      filename: a.filename,
+      content: a.data,
+      encoding: 'base64',
+      contentType: a.mimeType,
+    })),
   });
 
   console.log(`[mailer] sent ${row.id} to ${row.recipientEmail} — preview: ${nodemailer.getTestMessageUrl(info)}`);

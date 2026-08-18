@@ -19,6 +19,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(body?.error ?? `API request failed: ${res.status} ${res.statusText}`);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -28,5 +29,7 @@ export const apiClient = {
     request<T>(path, { ...options, method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body: unknown, options?: RequestInit) =>
     request<T>(path, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body: unknown, options?: RequestInit) =>
+    request<T>(path, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };

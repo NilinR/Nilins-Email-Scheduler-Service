@@ -1,14 +1,14 @@
-import { Worker, type Job } from 'bullmq';
+import { Worker, DelayedError, type Job } from 'bullmq';
 import { and, eq, ne } from 'drizzle-orm';
 import { connection } from './connection.js';
-import { EMAIL_QUEUE_NAME, emailQueue, emailJobId } from './emailQueue.js';
+import { EMAIL_QUEUE_NAME } from './emailQueue.js';
 import { db } from '../db/client.js';
 import { emails, campaigns } from '../db/schema.js';
 import { checkAndIncrementRateLimit } from '../services/rateLimiter.js';
 import { sendEmail } from '../services/mailer.js';
 import { config } from '../config.js';
 
-async function processor(job: Job): Promise<void> {
+async function processor(job: Job, token?: string): Promise<void> {
   const { emailId } = job.data as { emailId: string };
 
   const [row] = await db
@@ -21,17 +21,16 @@ async function processor(job: Job): Promise<void> {
 
   const rateLimit = await checkAndIncrementRateLimit(row.senderId, row.hourlyLimit);
   if (!rateLimit.allowed) {
-    // no fail, reschedule into the next window, same jobId
-    await emailQueue.add(
-      'send-email',
-      { emailId },
-      { jobId: emailJobId(emailId), delay: rateLimit.retryAt - Date.now() }
-    );
-    return;
+    // this job is still active - re-adding with the same jobId would be a silent no-op
+    // (BullMQ ignores an add() for an id that already exists), so we move it into the
+    // delayed set directly and signal BullMQ not to treat this as completed/failed
+    await db.update(emails).set({ nextAttemptAt: new Date(rateLimit.retryAt) }).where(eq(emails.id, emailId));
+    await job.moveToDelayed(rateLimit.retryAt, token);
+    throw new DelayedError();
   }
 
-  //mark processing
-  await db.update(emails).set({ status: 'processing' }).where(eq(emails.id, emailId));
+  //mark processing - also clears nextAttemptAt now that the rate-limit wait (if any) is over
+  await db.update(emails).set({ status: 'processing', nextAttemptAt: null }).where(eq(emails.id, emailId));
 
   try {
     await sendEmail(row);

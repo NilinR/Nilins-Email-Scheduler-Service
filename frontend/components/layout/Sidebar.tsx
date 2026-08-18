@@ -22,7 +22,7 @@ export function Sidebar({ activeTab, onTabChange, onCompose, scheduledCount, sen
         alt="ONB"
         width={64}
         height={20}
-        className="mb-6 h-5 w-auto self-start object-contain"
+        className="mb-6 h-7 w-auto self-start object-contain"
         priority
       />
 

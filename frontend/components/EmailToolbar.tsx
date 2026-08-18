@@ -1,9 +1,9 @@
-import { Search, FlaskConical, RotateCw } from 'lucide-react';
+import { Search, Filter, RotateCw } from 'lucide-react';
 
 export function EmailToolbar() {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className="flex flex-1 items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+      <div className="flex w-200 max-w-full items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
         <Search size={16} className="text-gray-400" />
         <input
           type="text"
@@ -12,7 +12,7 @@ export function EmailToolbar() {
         />
       </div>
       <button type="button" className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-50" aria-label="Filter">
-        <FlaskConical size={16} className="rotate-180" />
+        <Filter size={16} />
       </button>
       <button type="button" className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-50" aria-label="Refresh">
         <RotateCw size={16} />

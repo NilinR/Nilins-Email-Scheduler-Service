@@ -1,0 +1,24 @@
+# Node / package manager
+node_modules/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!.env.example
+
+# Build outputs
+build/
+dist/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/

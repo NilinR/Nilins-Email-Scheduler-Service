@@ -1,0 +1,3 @@
+ALTER TABLE `campaigns` ADD CONSTRAINT `campaigns_sender_id_senders_id_fk` FOREIGN KEY (`sender_id`) REFERENCES `senders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `emails` ADD CONSTRAINT `emails_campaign_id_campaigns_id_fk` FOREIGN KEY (`campaign_id`) REFERENCES `campaigns`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `emails` ADD CONSTRAINT `emails_sender_id_senders_id_fk` FOREIGN KEY (`sender_id`) REFERENCES `senders`(`id`) ON DELETE no action ON UPDATE no action;

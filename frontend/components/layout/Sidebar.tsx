@@ -8,8 +8,8 @@ interface SidebarProps {
   activeTab: 'scheduled' | 'sent';
   onTabChange: (tab: 'scheduled' | 'sent') => void;
   onCompose: () => void;
-  scheduledCount: number;
-  sentCount: number;
+  scheduledCount: number | null;
+  sentCount: number | null;
 }
 
 export function Sidebar({ activeTab, onTabChange, onCompose, scheduledCount, sentCount }: SidebarProps) {
@@ -62,7 +62,7 @@ export function Sidebar({ activeTab, onTabChange, onCompose, scheduledCount, sen
             <Clock size={16} />
             Scheduled
           </span>
-          <span className="text-xs text-gray-500">{scheduledCount}</span>
+          <span className="text-xs text-gray-500">{scheduledCount ?? '...'}</span>
         </button>
         <button
           type="button"
@@ -75,7 +75,7 @@ export function Sidebar({ activeTab, onTabChange, onCompose, scheduledCount, sen
             <Send size={16} />
             Sent
           </span>
-          <span className="text-xs text-gray-500">{sentCount}</span>
+          <span className="text-xs text-gray-500">{sentCount ?? '...'}</span>
         </button>
       </nav>
     </aside>

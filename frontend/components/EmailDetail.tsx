@@ -36,15 +36,19 @@ export function EmailDetail({ item, onBack }: { item: EmailListItemData; onBack:
       <div className="rounded-xl border border-gray-100 p-5">
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-medium text-white">
-              {item.recipientName.charAt(0).toUpperCase()}
-            </div>
+            {session?.user?.image ? (
+              <Image src={session.user.image} alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full" />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-medium text-white">
+                {session?.user?.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
               <p className="text-sm text-gray-900">
-                {item.recipientName} <span className="text-gray-400">&lt;{item.recipientEmail}&gt;</span>
+                {session?.user?.name} <span className="text-gray-400">&lt;{session?.user?.email}&gt;</span>
               </p>
               <p className="flex items-center gap-1 text-xs text-gray-400">
-                to me <ChevronDown size={12} />
+                to {item.recipientName} <ChevronDown size={12} />
               </p>
             </div>
           </div>

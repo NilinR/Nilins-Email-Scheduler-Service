@@ -1,6 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import { Upload, X } from 'lucide-react';
+import { parseRecipientsFile, type ParsedRecipients } from '@/lib/parseRecipients';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VISIBLE_COUNT = 3;
@@ -13,6 +14,7 @@ interface RecipientsInputProps {
 export function RecipientsInput({ recipients, onChange }: RecipientsInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [expanded, setExpanded] = useState(false);
+  const [uploadSummary, setUploadSummary] = useState<ParsedRecipients | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function addRecipient(value: string) {
@@ -40,11 +42,9 @@ export function RecipientsInput({ recipients, onChange }: RecipientsInputProps) 
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    const found = text
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
-      .filter((s) => EMAIL_RE.test(s));
-    const merged = Array.from(new Set([...recipients, ...found]));
+    const parsed = parseRecipientsFile(text);
+    setUploadSummary(parsed);
+    const merged = Array.from(new Set([...recipients, ...parsed.valid]));
     onChange(merged);
     e.target.value = '';
   }
@@ -53,49 +53,57 @@ export function RecipientsInput({ recipients, onChange }: RecipientsInputProps) 
   const hiddenCount = recipients.length - visible.length;
 
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-gray-100 py-2">
-      <div className="flex flex-1 flex-wrap items-center gap-1.5">
-        <span className="w-16 shrink-0 text-sm text-gray-500">To</span>
-        {visible.map((email) => (
-          <span
-            key={email}
-            className="flex items-center gap-1 rounded-full border border-green-200 bg-white px-2.5 py-0.5 text-xs text-green-700"
-          >
-            {email}
-            <button type="button" onClick={() => removeRecipient(email)} aria-label={`Remove ${email}`}>
-              <X size={11} className="text-green-500 hover:text-green-700" />
+    <div className="border-b border-gray-100 py-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-1 flex-wrap items-center gap-1.5">
+          <span className="w-16 shrink-0 text-sm text-gray-500">To</span>
+          {visible.map((email) => (
+            <span
+              key={email}
+              className="flex items-center gap-1 rounded-full border border-green-200 bg-white px-2.5 py-0.5 text-xs text-green-700"
+            >
+              {email}
+              <button type="button" onClick={() => removeRecipient(email)} aria-label={`Remove ${email}`}>
+                <X size={11} className="text-green-500 hover:text-green-700" />
+              </button>
+            </span>
+          ))}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="rounded-full border border-green-200 bg-white px-2.5 py-0.5 text-xs text-green-700"
+            >
+              +{hiddenCount}
             </button>
-          </span>
-        ))}
-        {hiddenCount > 0 && (
-          <button
-            type="button"
-            onClick={() => setExpanded(true)}
-            className="rounded-full border border-green-200 bg-white px-2.5 py-0.5 text-xs text-green-700"
-          >
-            +{hiddenCount}
-          </button>
-        )}
-        <input
-          type="email"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => addRecipient(inputValue)}
-          placeholder={recipients.length === 0 ? 'recipient@example.com' : ''}
-          className="min-w-[160px] flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
-        />
+          )}
+          <input
+            type="email"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => addRecipient(inputValue)}
+            placeholder={recipients.length === 0 ? 'recipient@example.com' : ''}
+            className="min-w-[160px] flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="flex shrink-0 items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700"
+        >
+          <Upload size={12} />
+          Upload List
+        </button>
+        <input ref={fileInputRef} type="file" accept=".csv,.txt,text/csv,text/plain" className="hidden" onChange={handleFileUpload} />
       </div>
 
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="flex shrink-0 items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700"
-      >
-        <Upload size={12} />
-        Upload List
-      </button>
-      <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFileUpload} />
+      {uploadSummary && (
+        <p className="mt-1.5 pl-16 text-xs text-gray-400">
+          {uploadSummary.valid.length} valid, {uploadSummary.invalid.length} invalid, {uploadSummary.duplicateCount} duplicates
+        </p>
+      )}
     </div>
   );
 }

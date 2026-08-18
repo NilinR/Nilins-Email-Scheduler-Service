@@ -43,9 +43,10 @@ router.post('/', async (req, res) => {
   if (!Array.isArray(recipients) || recipients.length === 0) {
     return res.status(400).json({ error: 'recipients must be a non-empty array' });
   }
-  const invalidRecipient = recipients.find((r) => typeof r !== 'string' || !EMAIL_RE.test(r));
-  if (invalidRecipient !== undefined) {
-    return res.status(400).json({ error: `invalid recipient email: ${invalidRecipient}` });
+  const validRecipients = recipients.filter((r): r is string => typeof r === 'string' && EMAIL_RE.test(r));
+  const skippedRecipients = recipients.filter((r) => !validRecipients.includes(r));
+  if (validRecipients.length === 0) {
+    return res.status(400).json({ error: 'No valid recipient emails in request.' });
   }
 
   const result = await createCampaign({
@@ -56,10 +57,10 @@ router.post('/', async (req, res) => {
     startTime: startTimeDate,
     delayMs,
     hourlyLimit,
-    recipients,
+    recipients: validRecipients,
   });
 
-  res.status(201).json(result);
+  res.status(201).json({ ...result, skippedRecipients });
 });
 
 export default router;

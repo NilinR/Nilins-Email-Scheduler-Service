@@ -1,21 +1,40 @@
 export interface Sender {
   id: string;
-  email: string;
   name: string;
+  fromEmail: string;
 }
 
-export interface Campaign {
-  id: string;
-  name: string;
-  createdAt: string;
+export interface CreateCampaignPayload {
+  userId: string;
+  subject: string;
+  body: string;
+  senderId: string;
+  startTime: string; // ISO
+  delayMs: number;
+  hourlyLimit?: number;
+  recipients: string[];
 }
 
-export interface Email {
+export interface CreateCampaignResponse {
+  campaignId: string;
+  count: number;
+  skippedRecipients: string[];
+}
+
+export type EmailStatus = 'pending' | 'processing' | 'sent' | 'failed';
+
+export interface EmailRow {
   id: string;
   campaignId: string;
-  recipient: string;
+  senderId: string;
+  recipientEmail: string;
   subject: string;
-  status: 'scheduled' | 'sent' | 'failed';
+  status: EmailStatus;
   scheduledAt: string;
-  sentAt?: string;
+  sentAt: string | null;
+  attempts: number;
+  errorMessage: string | null;
+  jobId: string;
+  createdAt: string;
+  updatedAt: string;
 }

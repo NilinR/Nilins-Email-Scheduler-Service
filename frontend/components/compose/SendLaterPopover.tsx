@@ -1,16 +1,52 @@
 'use client';
 import { useState } from 'react';
 
-const QUICK_OPTIONS = ['Tomorrow', 'Tomorrow, 10:00 AM', 'Tomorrow, 11:00 AM', 'Tomorrow, 3:00 PM'];
+function tomorrowAt(hours?: number, minutes = 0): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  if (hours !== undefined) {
+    date.setHours(hours, minutes, 0, 0);
+  }
+  return date;
+}
+
+const QUICK_OPTIONS: { label: string; date: Date }[] = [
+  { label: 'Tomorrow', date: tomorrowAt() },
+  { label: 'Tomorrow, 10:00 AM', date: tomorrowAt(10) },
+  { label: 'Tomorrow, 11:00 AM', date: tomorrowAt(11) },
+  { label: 'Tomorrow, 3:00 PM', date: tomorrowAt(15) },
+];
+
+export interface ScheduledTime {
+  label: string;
+  isoDate: string;
+}
 
 interface SendLaterPopoverProps {
   onCancel: () => void;
-  onDone: (label: string) => void;
+  onDone: (scheduled: ScheduledTime) => void;
 }
 
 export function SendLaterPopover({ onCancel, onDone }: SendLaterPopoverProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [customDate, setCustomDate] = useState('');
+
+  function handleDone() {
+    if (selected) {
+      const option = QUICK_OPTIONS.find((o) => o.label === selected);
+      if (option) onDone({ label: option.label, isoDate: option.date.toISOString() });
+      return;
+    }
+    if (customDate) {
+      const date = new Date(customDate);
+      if (!Number.isNaN(date.getTime())) {
+        onDone({
+          label: date.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }),
+          isoDate: date.toISOString(),
+        });
+      }
+    }
+  }
 
   return (
     <>
@@ -31,17 +67,17 @@ export function SendLaterPopover({ onCancel, onDone }: SendLaterPopoverProps) {
         <div className="mb-4 flex flex-col">
           {QUICK_OPTIONS.map((option) => (
             <button
-              key={option}
+              key={option.label}
               type="button"
               onClick={() => {
-                setSelected(option);
+                setSelected(option.label);
                 setCustomDate('');
               }}
               className={`rounded-md px-2 py-1.5 text-left text-sm transition ${
-                selected === option ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'
+                selected === option.label ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              {option}
+              {option.label}
             </button>
           ))}
         </div>
@@ -53,7 +89,7 @@ export function SendLaterPopover({ onCancel, onDone }: SendLaterPopoverProps) {
           <button
             type="button"
             disabled={!selected && !customDate}
-            onClick={() => onDone(selected ?? customDate)}
+            onClick={handleDone}
             className="rounded-full border border-green-600 px-4 py-1 text-sm font-medium text-green-600 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Done

@@ -7,19 +7,34 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "dev": "concurrently -n server,worker -c blue,green \"npm:dev:server\" \"npm:dev:worker\"",
+    "build": "tsc",
+    "start:server": "node dist/server.js",
+    "start:worker": "node dist/worker.js"
   },
   "dependencies": {
+    "bullmq": "^5.34.6",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.4",
+    "express": "^4.21.2",
+    "ioredis": "^5.4.2",
     "mysql2": "^3.11.5",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "drizzle-kit": "^0.28.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
-    "@types/nodemailer": "^6.4.16"
+    "@types/nodemailer": "^6.4.16",
+    "@types/uuid": "^10.0.0"
   }
 }

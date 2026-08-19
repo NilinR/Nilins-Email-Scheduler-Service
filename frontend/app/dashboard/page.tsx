@@ -7,13 +7,18 @@ import { SentEmailsTable } from '@/components/SentEmailsTable';
 import { ComposeView } from '@/components/ComposeView';
 import { EmailDetail } from '@/components/EmailDetail';
 import { Toast } from '@/components/Toast';
-import type { EmailListItemData } from '@/components/EmailListItem';
+import { EmailListItem, type EmailListItemData } from '@/components/EmailListItem';
+import { Star } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
 import { mapEmailRowToListItem } from '@/lib/mapEmailRow';
 import { useEmailEvents } from '@/lib/useEmailEvents';
 import type { EmailRow } from '@/lib/types';
 
-type View = { kind: 'list' } | { kind: 'compose' } | { kind: 'detail'; email: EmailListItemData };
+type View =
+  | { kind: 'list' }
+  | { kind: 'compose' }
+  | { kind: 'detail'; email: EmailListItemData; from: 'list' | 'favorites' }
+  | { kind: 'favorites' };
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'scheduled' | 'sent'>('scheduled');
@@ -71,6 +76,16 @@ export default function DashboardPage() {
 
   const filteredScheduled = useMemo(() => filterItems(scheduled), [filterItems, scheduled]);
   const filteredSent = useMemo(() => filterItems(sent), [filterItems, sent]);
+
+  const favorites = useMemo(
+    () => [...(scheduled ?? []), ...(sent ?? [])].filter((e) => e.starred),
+    [scheduled, sent],
+  );
+
+  // if the last favorite gets unstarred while its tab is open, drop back to the list
+  useEffect(() => {
+    if (view.kind === 'favorites' && favorites.length === 0) setView({ kind: 'list' });
+  }, [view.kind, favorites.length]);
 
   // an email moving to sent/failed changes both the scheduled and sent lists - refetch is
   // the simplest correct approach given SSE only carries an ID and status, not the full row
@@ -147,7 +162,7 @@ export default function DashboardPage() {
         {view.kind === 'detail' && (
           <EmailDetail
             item={view.email}
-            onBack={() => setView({ kind: 'list' })}
+            onBack={() => setView(view.from === 'favorites' ? { kind: 'favorites' } : { kind: 'list' })}
             onToggleStar={() => handleToggleStar(view.email)}
             onArchive={() => handleArchive(view.email)}
             onDelete={() => handleDelete(view.email)}
@@ -167,20 +182,46 @@ export default function DashboardPage() {
               <ScheduledEmailsTable
                 items={filteredScheduled}
                 error={scheduledError}
-                onSelect={(email) => setView({ kind: 'detail', email })}
+                onSelect={(email) => setView({ kind: 'detail', email, from: 'list' })}
                 onToggleStar={handleToggleStar}
               />
             ) : (
               <SentEmailsTable
                 items={filteredSent}
                 error={sentError}
-                onSelect={(email) => setView({ kind: 'detail', email })}
+                onSelect={(email) => setView({ kind: 'detail', email, from: 'list' })}
                 onToggleStar={handleToggleStar}
               />
             )}
           </>
         )}
+        {view.kind === 'favorites' && (
+          <>
+            <h2 className="mb-4 text-sm font-medium text-gray-900">Favorites</h2>
+            <div className="rounded-xl border border-gray-100">
+              {favorites.map((item) => (
+                <EmailListItem
+                  key={item.id}
+                  item={item}
+                  onClick={() => setView({ kind: 'detail', email: item, from: 'favorites' })}
+                  onToggleStar={() => handleToggleStar(item)}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </main>
+      {favorites.length > 0 && view.kind !== 'favorites' && (
+        <button
+          type="button"
+          onClick={() => setView({ kind: 'favorites' })}
+          aria-label={`Favorites (${favorites.length})`}
+          className="fixed right-0 top-6 flex items-center gap-1.5 rounded-l-lg bg-yellow-400 py-2 pl-3 pr-2 text-xs font-medium text-white shadow-md transition hover:bg-yellow-500"
+        >
+          <Star size={14} className="fill-white" />
+          {favorites.length}
+        </button>
+      )}
       {notice && <Toast message={notice} onDismiss={() => setNotice(null)} />}
     </div>
   );

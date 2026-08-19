@@ -1,7 +1,8 @@
 'use client';
+import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
-import { ChevronDown, Clock, Send } from 'lucide-react';
+import { ChevronDown, Clock, LogOut, Send } from 'lucide-react';
 import onbLogo from '@/public/onb.png';
 
 interface SidebarProps {
@@ -14,6 +15,17 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, onTabChange, onCompose, scheduledCount, sentCount }: SidebarProps) {
   const { data: session } = useSession();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-gray-100 p-4">
@@ -26,20 +38,35 @@ export function Sidebar({ activeTab, onTabChange, onCompose, scheduledCount, sen
         priority
       />
 
-      <button
-        type="button"
-        onClick={() => signOut({ callbackUrl: '/' })}
-        className="mb-4 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-left transition hover:bg-gray-100"
-      >
-        {session?.user?.image && (
-          <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full" />
+      <div className="relative mb-4" ref={menuRef}>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-expanded={menuOpen}
+          className="flex w-full items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-left transition hover:bg-gray-100"
+        >
+          {session?.user?.image && (
+            <Image src={session.user.image} alt="" width={32} height={32} className="rounded-full" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-gray-900">{session?.user?.name}</p>
+            <p className="truncate text-xs text-gray-500">{session?.user?.email}</p>
+          </div>
+          <ChevronDown size={16} className="text-gray-400" />
+        </button>
+        {menuOpen && (
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-lg border border-gray-100 bg-white py-1 shadow-lg">
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <LogOut size={14} />
+              Sign out
+            </button>
+          </div>
         )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-gray-900">{session?.user?.name}</p>
-          <p className="truncate text-xs text-gray-500">{session?.user?.email}</p>
-        </div>
-        <ChevronDown size={16} className="text-gray-400" />
-      </button>
+      </div>
 
       <button
         type="button"

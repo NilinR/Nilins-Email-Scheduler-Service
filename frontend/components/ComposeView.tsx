@@ -151,6 +151,16 @@ export function ComposeView({ onBack }: { onBack: (notice?: string) => void }) {
         </button>
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleAttachFiles} />
 
+        {scheduled && (
+          <button
+            type="button"
+            onClick={() => setSendLaterOpen(true)}
+            className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 transition hover:bg-green-100"
+          >
+            {scheduled.label}
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => setSendLaterOpen((v) => !v)}
@@ -171,6 +181,7 @@ export function ComposeView({ onBack }: { onBack: (notice?: string) => void }) {
 
         {sendLaterOpen && (
           <SendLaterPopover
+            initial={scheduled}
             onCancel={() => setSendLaterOpen(false)}
             onDone={(value) => {
               setScheduled(value);
@@ -247,7 +258,7 @@ export function ComposeView({ onBack }: { onBack: (notice?: string) => void }) {
             ref={editorRef}
             contentEditable
             data-placeholder="Type Your Reply..."
-            className="min-h-[80px] px-4 py-3 text-sm text-gray-700 empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] focus:outline-none"
+            className="min-h-[80px] px-4 py-3 text-sm text-gray-700 empty:before:text-gray-400 empty:before:content-[attr(data-placeholder)] focus:outline-none [&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:text-gray-500 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
           />
           <RichTextToolbar editorRef={editorRef} />
         </div>

@@ -1,0 +1,1 @@
+ALTER TABLE `emails` ADD `next_attempt_at` timestamp;

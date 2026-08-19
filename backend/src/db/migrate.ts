@@ -6,7 +6,7 @@ import { migrate } from 'drizzle-orm/mysql2/migrator';
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set (see backend/.env.example)');
+  throw new Error('DATABASE_URL is not set (see backend/.env)');
 }
 //create mysql connection
 const connection = await mysql.createConnection({ uri: DATABASE_URL });

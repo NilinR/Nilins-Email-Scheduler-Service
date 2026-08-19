@@ -4,7 +4,7 @@ import 'dotenv/config';
 function required(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`${name} is not set (see backend/.env.example)`);
+    throw new Error(`${name} is not set (see backend/.env)`);
   }
   return value;
 }
@@ -40,6 +40,16 @@ export const config = {
   workerConcurrency: optionalInt('WORKER_CONCURRENCY', 5),
 
   stuckProcessingThresholdMs: optionalInt('STUCK_PROCESSING_THRESHOLD_MS', 300000),
+
+  //retries on top of the initial attempt for a send that throws (SMTP hiccup, timeout, etc.) -
+  //exponential backoff so a flaky sender isn't hammered immediately
+  emailMaxAttempts: optionalInt('EMAIL_MAX_ATTEMPTS', 3),
+  emailBackoffDelayMs: optionalInt('EMAIL_BACKOFF_DELAY_MS', 10000),
+
+  //how long a completed response stays cached under its Idempotency-Key, and how long an
+  //in-flight request holds its lock before a retry is allowed to try again
+  idempotencyResponseTtlSec: optionalInt('IDEMPOTENCY_RESPONSE_TTL_SEC', 24 * 60 * 60),
+  idempotencyLockTtlSec: optionalInt('IDEMPOTENCY_LOCK_TTL_SEC', 30),
 
   nextAuthUrl: process.env.NEXTAUTH_URL ?? 'http://localhost:3000',
   nextAuthSecret: process.env.NEXTAUTH_SECRET ?? '',

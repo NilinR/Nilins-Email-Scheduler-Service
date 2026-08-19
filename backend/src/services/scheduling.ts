@@ -84,7 +84,14 @@ export async function createCampaign(input: CreateCampaignInput) {
     await emailQueue.add(
       'send-email',
       { emailId: row.id },
-      { jobId: row.jobId, delay, removeOnComplete: true, removeOnFail: false }
+      {
+        jobId: row.jobId,
+        delay,
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: config.emailMaxAttempts,
+        backoff: { type: 'exponential', delay: config.emailBackoffDelayMs },
+      }
     );
   }
 

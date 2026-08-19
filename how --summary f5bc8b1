@@ -1,7 +1,0 @@
-[33mcommit f5bc8b143ba1634a98aced7a3a25a17fa7f50fea[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
-Author:     NILIN ROSE <nilinr0@gmail.com>
-AuthorDate: Wed Aug 19 02:53:11 2026 +0530
-Commit:     NILIN ROSE <nilinr0@gmail.com>
-CommitDate: Wed Aug 19 02:53:11 2026 +0530
-
-    rate limit retrying fix, and icon working

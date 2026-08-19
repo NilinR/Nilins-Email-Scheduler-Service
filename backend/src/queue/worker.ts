@@ -19,7 +19,7 @@ async function processor(job: Job, token?: string): Promise<void> {
     .then((rows) => rows.map((r) => ({ ...r.email, hourlyLimit: r.hourlyLimit })));
   if (!row || row.status === 'sent') return; // already handled - idempotent exit
 
-  const rateLimit = await checkAndIncrementRateLimit(row.senderId, row.hourlyLimit);
+  const rateLimit = await checkAndIncrementRateLimit(row.senderId, row.campaignId, row.hourlyLimit);
   if (!rateLimit.allowed) {
     // this job is still active - re-adding with the same jobId would be a silent no-op
     // (BullMQ ignores an add() for an id that already exists), so we move it into the
@@ -42,9 +42,20 @@ async function processor(job: Job, token?: string): Promise<void> {
       .set({ status: 'sent', sentAt: new Date() })
       .where(and(eq(emails.id, emailId), ne(emails.status, 'sent')));
   } catch (err) {
+    // job.attemptsMade counts this attempt - once it reaches the configured max, BullMQ
+    // won't retry again, so only then is 'failed' the true final state. Otherwise this is
+    // a transient failure BullMQ will retry after its backoff delay, so leave it 'pending'
+    // rather than showing the user a failure that's about to self-heal.
+    // mirrors BullMQ's own shouldRetryJob check (job.attemptsMade isn't incremented for the
+    // current attempt until after this handler returns, so "+1" is what BullMQ will compare)
+    const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
     await db
       .update(emails)
-      .set({ status: 'failed', errorMessage: (err as Error).message, attempts: row.attempts + 1 })
+      .set({
+        status: isFinalAttempt ? 'failed' : 'pending',
+        errorMessage: (err as Error).message,
+        attempts: row.attempts + 1,
+      })
       .where(eq(emails.id, emailId));
     throw err; //let BullMQ's retry/backoff handle it
   }

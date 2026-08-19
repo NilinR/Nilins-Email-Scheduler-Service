@@ -35,7 +35,14 @@ export async function runReconciliationSweep(): Promise<void> {
     await emailQueue.add(
       'send-email',
       { emailId: row.id },
-      { jobId: emailJobId(row.id), delay: 0, removeOnComplete: true, removeOnFail: false }
+      {
+        jobId: emailJobId(row.id),
+        delay: 0,
+        removeOnComplete: true,
+        removeOnFail: false,
+        attempts: config.emailMaxAttempts,
+        backoff: { type: 'exponential', delay: config.emailBackoffDelayMs },
+      }
     );
     reenqueued++;
   }

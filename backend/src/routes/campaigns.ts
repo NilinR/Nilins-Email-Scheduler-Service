@@ -3,6 +3,7 @@ import { desc } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { campaigns } from '../db/schema.js';
 import { createCampaign } from '../services/scheduling.js';
+import { idempotency, runIdempotent, IdempotencyConflictError } from '../middleware/idempotency.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/', async (_req, res) => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // POST /api/campaigns - accept email scheduling requests
-router.post('/', async (req, res) => {
+router.post('/', idempotency, async (req, res) => {
   const { userId, subject, body, senderId, startTime, delayMs, hourlyLimit, recipients, attachments } = req.body ?? {};
 
   if (typeof userId !== 'string' || !userId) {
@@ -63,19 +64,28 @@ router.post('/', async (req, res) => {
     }
   }
 
-  const result = await createCampaign({
-    userId,
-    subject,
-    body,
-    senderId,
-    startTime: startTimeDate,
-    delayMs,
-    hourlyLimit,
-    recipients: validRecipients,
-    attachments,
-  });
-
-  res.status(201).json({ ...result, skippedRecipients });
+  try {
+    const { status, body: responseBody } = await runIdempotent('campaigns', req.idempotencyKey, async () => {
+      const result = await createCampaign({
+        userId,
+        subject,
+        body,
+        senderId,
+        startTime: startTimeDate,
+        delayMs,
+        hourlyLimit,
+        recipients: validRecipients,
+        attachments,
+      });
+      return { status: 201, body: { ...result, skippedRecipients } };
+    });
+    res.status(status).json(responseBody);
+  } catch (err) {
+    if (err instanceof IdempotencyConflictError) {
+      return res.status(err.result.status).json(err.result.body);
+    }
+    throw err;
+  }
 });
 
 export default router;

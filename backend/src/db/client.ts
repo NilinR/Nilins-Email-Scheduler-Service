@@ -6,7 +6,7 @@ import * as schema from './schema.js';
 const DATABASE_URL = process.env.DATABASE_URL;
 //check url set
 if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set (see backend/.env.example)');
+  throw new Error('DATABASE_URL is not set (see backend/.env)');
 }
 //create mysql connection pool
 export const pool = mysql.createPool({

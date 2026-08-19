@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
   });
   res.write('retry: 3000\n\n');
 
-  const send = (emailId: string, status: 'sent' | 'failed') => {
+  const send = (emailId: string, status: string) => {
     res.write(`event: email-updated\ndata: ${JSON.stringify({ emailId, status })}\n\n`);
   };
 
@@ -40,11 +40,16 @@ router.get('/', (req, res) => {
     }
   };
 
+  // a rate-limited job gets moved to delayed (not completed/failed) with nextAttemptAt set -
+  // without this, the "Retrying at" label only appears on the next unrelated refetch
+  const onDelayed = ({ jobId }: { jobId: string }) => send(emailIdFromJobId(jobId), 'pending');
+
   const onCompleted = ({ jobId }: { jobId: string }) => void reportRealStatus(jobId);
   const onFailed = ({ jobId }: { jobId: string }) => void reportRealStatus(jobId);
 
   queueEvents.on('completed', onCompleted);
   queueEvents.on('failed', onFailed);
+  queueEvents.on('delayed', onDelayed);
 
   const heartbeat = setInterval(() => {
     res.write(': heartbeat\n\n');
@@ -54,6 +59,7 @@ router.get('/', (req, res) => {
     clearInterval(heartbeat);
     queueEvents.off('completed', onCompleted);
     queueEvents.off('failed', onFailed);
+    queueEvents.off('delayed', onDelayed);
     res.end();
   });
 });

@@ -1,18 +1,21 @@
 # Nilin's-Email-Scheduler-Service
 Production grade email scheduler service and dashboard, following the Outbox specifications. BullMQ+redis, no cron scheduling
 
+## Setup
+
+> **Note on committed secrets:** This repo intentionally commits real, working environment variables (including OAuth credentials) directly for reviewer convenience — this repo is private and access-restricted to two named reviewers for a short-lived take-home assessment. This is a deliberate trade-off for this context, not an oversight, and would **not** be appropriate practice for a real production repository.
+
 ## Database setup
 
 The schema is in `backend/src/db/schema.ts` (it uses Drizzle ORM on MySQL). 
 
 Tables: `senders`, `campaigns`, `emails`, with Foreign Key constraints (`campaigns.sender_id → senders.id`, `emails.campaign_id → campaigns.id` `ON DELETE CASCADE`, `emails.sender_id → senders.id`).
 
-1. Copy env config and start MySQL:
+1. Start MySQL (env vars are already committed in `backend/.env`, see note above):
    ```bash
-   cp backend/.env.example backend/.env
    docker compose up -d
    ```
-   publishes on **3307** (not 3306, in case you have a local MySQL server like me). `DATABASE_URL` in `.env.example` points at 3307, you can change it if you remap the port.
+   publishes on **3307** (not 3306, in case you have a local MySQL server like me). `DATABASE_URL` in `backend/.env` points at 3307, you can change it if you remap the port.
 2. From `backend/`, install deps, apply migrations, and to test seed two example Ethereal test senders:
    ```bash
    cd backend

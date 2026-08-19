@@ -103,7 +103,9 @@ FRONTEND_URL=http://localhost:3000
 ```
 
 ---
-
+## Video Walkthrough
+https://drive.google.com/file/d/1Z4Yon2iqWytcVo8qQS9yU1VxEAK7NXNr/view?usp=sharing
+---
 ## Architecture overview
 
 ### How scheduling works

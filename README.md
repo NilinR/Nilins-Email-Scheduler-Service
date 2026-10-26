@@ -4,8 +4,6 @@ A production style email scheduling service.
 
  That schedules bulk emails via API, have them sent reliably at the right time through a persistent job queue, and track their status live from a web dashboard.
 
-Built for the Outbox assessment according to the specifications.
-
 ---
 
 ## Tech stack

@@ -30,8 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (private rpo, for quick testing purposes)
-#.env*
+env files (private rpo, for quick testing purposes)
+.env*
 
 # vercel
 .vercel

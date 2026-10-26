@@ -60,7 +60,15 @@ Ethereal test accounts are generated automatically by `npm run db:seed`. There i
 
 ### Environment variables
 
-Values are already committed in `backend/.env`. These can be set for example, editing the global max mails for sender per hour. For reference, here's what each variable controls:
+Create your local environment file from the checked-in template:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+
+For reference, here's what each variable controls:
 
 ```bash
 # Server
@@ -93,9 +101,9 @@ EMAIL_BACKOFF_DELAY_MS=10000
 
 # Auth.js
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+NEXTAUTH_SECRET=replace_with_secure_random_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 FRONTEND_URL=http://localhost:3000
 ```
@@ -214,7 +222,6 @@ The hourly rate is checked at 2 levels.
 - **Frontend and backend maintain independent type definitions** rather than a shared types package — consistent with the two-folder, no-shared-tooling repo layout chosen for simplicity.
 - **Ethereal accounts are ephemeral** and regenerated via a seed script rather than relied upon long-term
 - **MySQL** chosen beacuse is well documented and I have existing familiarity with it (reducing debugging time).
-- **Real environment credentials are committed to this repo** I have included real, working `.env` values (for Google OAuth credentials) directly rather than requiring separate setup. As OAuth setup takes time and the repo access is private and restricted to reviewers for the assessment.(Its a basic OAuth scope and a fake SMTP test service nothing financial,or real user data). I know this would not be appropriate for a real production repo, where secrets are never  committed regardless of access scope,It is a conscious exception made here to remove setup friction for the reviewers.
 
 
 

@@ -1,8 +1,12 @@
 # Node / package manager
 node_modules/
 
-# Local environment files for this private repo it has been exposed for quick testing purposes
-#.env
+# Local environment files
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
 
 # Build outputs
 build/
